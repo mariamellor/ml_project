@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load main dataset
-train = pd.read_csv("learn_dataset.csv")
+train = pd.read_csv("data/learn_dataset.csv")
 
 print("MAIN DATASET")
 print("Number of people:", train.shape[0])
@@ -18,14 +18,14 @@ print(train.isna().sum())
 
 # Load sport dataset
 print("\n--- SPORT DATASET ---")
-sport = pd.read_csv("learn_dataset_sport.csv")
+sport = pd.read_csv("data/learn_dataset_sport.csv")
 print("Sport dataset shape:", sport.shape)
 print("Sport columns:", sport.columns)
 print(sport.head())
 
 print("\n--- JOB SECURITY DATASET ---")
 
-job_sec = pd.read_csv("learn_dataset_JOB_SECURITY.csv")
+job_sec = pd.read_csv("data/learn_dataset_JOB_SECURITY.csv")
 
 print("Job security shape:", job_sec.shape)
 print("Job security columns:")
