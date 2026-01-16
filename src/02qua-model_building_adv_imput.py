@@ -189,7 +189,13 @@ pipeline = Pipeline(steps=[
     ('preprocessor', preprocessor),
     ('regressor', HistGradientBoostingRegressor(
         categorical_features=categorical_feature_indices,
-        random_state=42
+        random_state=42,
+        min_samples_leaf=5,
+        max_leaf_nodes=15,
+        max_iter=300,
+        max_depth=None,
+        learning_rate=0.05,
+        l2_regularization=0.5
     ))
 ])
 
@@ -252,12 +258,12 @@ else:
 # cv_strategy = KFold(n_splits=5, shuffle=True, random_state=42)
 
 # param_dist = {
-#     'regressor__max_iter': [100, 200, 300],
-#     'regressor__learning_rate': [0.01, 0.05, 0.1, 0.2],
-#     'regressor__max_leaf_nodes': [15, 31, 63, 127],
-#     'regressor__max_depth': [None, 5, 10, 20],
-#     'regressor__min_samples_leaf': [10, 20, 50, 100],
-#     'regressor__l2_regularization': [0.0, 0.1, 1.0, 10.0]
+#     'regressor__max_iter': [200, 300],
+#     'regressor__learning_rate': [0.05, 0.1, 0.2],
+#     'regressor__max_leaf_nodes': [10, 15, 31],
+#     'regressor__max_depth': [None],
+#     'regressor__min_samples_leaf': [5, 10, 20],
+#     'regressor__l2_regularization': [0.5, 0.1, 1.0]
 # }
 
 # halving_search = HalvingRandomSearchCV(
@@ -283,6 +289,16 @@ else:
 # best_model = halving_search.best_estimator_
 # val_r2_tuned = best_model.score(X_val, y_val)
 # print(f"✓ Tuned Model Validation R²: {val_r2_tuned:.4f}")
+
+best_model = pipeline
+
+# Ensure the model is fitted
+if not hasattr(best_model['regressor'], 'is_fitted_'):
+    print("Fitting model...")
+    best_model.fit(X_train, y_train)
+
+val_r2 = best_model.score(X_val, y_val)
+print(f"✓ Model Validation R²: {val_r2:.4f}")
 
 # =============================================================================
 # 7. FEATURE IMPORTANCE ANALYSIS
@@ -319,14 +335,13 @@ plt.title(f'Top {top_n} Feature Importances')
 plt.gca().invert_yaxis()
 plt.grid(axis='x', alpha=0.3)
 plt.tight_layout()
-plt.savefig(figures_dir / 'feature_importance.png', dpi=150)
+plt.savefig(figures_dir / 'adv_imput_feature_importance.png', dpi=150)
 plt.close()
-print(f"✓ Feature importance plot saved to figures/feature_importance.png")
+print(f"✓ Feature importance plot saved to figures/adv_imput_feature_importance.png")
 
 # =============================================================================
 # 8. LEARNING CURVE
 # =============================================================================
-best_model = pipeline
 
 print("\n" + "=" * 60)
 print("LEARNING CURVE")
@@ -350,12 +365,12 @@ def plot_learning_curve(estimator, X, y):
     plt.legend(loc="best")
     plt.grid()
     plt.tight_layout()
-    plt.savefig(figures_dir / 'learning_curve.png', dpi=150)
+    plt.savefig(figures_dir / 'adv_imput_learning_curve.png', dpi=150)
     plt.close()
 
 print("Computing learning curve...")
-plot_learning_curve(halving_search.best_estimator_, X, y)
-print(f"✓ Learning curve saved to figures/learning_curve.png")
+plot_learning_curve(best_model, X, y)
+print(f"✓ Learning curve saved to figures/adv_imput_learning_curve.png")
 
 # =============================================================================
 # 9. SAVE MODEL
