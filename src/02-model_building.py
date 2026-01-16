@@ -102,12 +102,6 @@ print("\n" + "=" * 60)
 print("BUILDING PREPROCESSING PIPELINE")
 print("=" * 60)
 
-# Force specific columns to be treated as categorical
-force_categorical_cols = ['CATEAVV2020', 'Categorie']
-for col in force_categorical_cols:
-    if col in learn_df.columns:
-        learn_df[col] = learn_df[col].astype(str)
-
 # Identify column types
 numeric_features = learn_df.select_dtypes(include=['int64', 'float64']).columns.tolist()
 categorical_features = learn_df.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -118,6 +112,13 @@ for col in ['target', 'primary_key']:
         numeric_features.remove(col)
     if col in categorical_features:
         categorical_features.remove(col)
+
+force_categorical = ['CATEAVV2020', 'Categorie']
+for col in force_categorical:
+    if col in numeric_features:
+        numeric_features.remove(col)
+    if col in learn_df.columns and col not in categorical_features:
+        categorical_features.append(col)
 
 # Filter high-cardinality categorical features
 MAX_CATEGORIES = 150
