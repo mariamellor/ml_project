@@ -338,10 +338,10 @@ print("\nTop 20 Features:")
 print(importance_df.head(20).to_string(index=False))
 
 # Plot feature importance
-top_n = 20
+top_n = 10
 top_features = importance_df.head(top_n)
 
-plt.figure(figsize=(12, 10))
+plt.figure(figsize=(10, 6))
 plt.barh(range(len(top_features)), top_features['importance_mean'],
          xerr=top_features['importance_std'], align='center', alpha=0.8, color='steelblue')
 plt.yticks(range(len(top_features)), top_features['feature'], fontsize=9)
@@ -387,7 +387,75 @@ plot_learning_curve(halving_search.best_estimator_, X, y)
 print(f"✓ Learning curve saved to figures/learning_curve.png")
 
 # =============================================================================
-# 10. SAVE MODEL
+# 10. OUTLIER ANALYSIS - BADLY PREDICTED VALUES
+# =============================================================================
+print("\n" + "=" * 60)
+print("OUTLIER ANALYSIS")
+print("=" * 60)
+
+# Calculate prediction errors (residuals) using the validation set
+val_residuals = y_val - y_val_pred
+val_abs_errors = np.abs(val_residuals)
+val_pct_errors = (val_abs_errors / y_val.replace(0, np.nan)) * 100 # Avoid division by zero
+
+# Create analysis dataframe
+outlier_df = pd.DataFrame({
+    'actual': y_val.values,
+    'predicted': y_val_pred,
+    'residual': val_residuals.values,
+    'abs_error': val_abs_errors.values,
+    'pct_error': val_pct_errors.values
+}, index=y_val.index)
+
+# Add original features for context analysis
+outlier_df = pd.concat([outlier_df, X_val], axis=1)
+
+# Define outlier thresholds (Method: 95th and 99th percentiles)
+p95_error = np.percentile(val_abs_errors, 95)
+p99_error = np.percentile(val_abs_errors, 99)
+
+print(f"Absolute Error Statistics (Validation):")
+print(f"  Mean: {val_abs_errors.mean():.2f}")
+print(f"  95th percentile: {p95_error:.2f}")
+print(f"  99th percentile: {p99_error:.2f}")
+
+# Categorize
+outlier_df['outlier_category'] = 'normal'
+outlier_df.loc[outlier_df['abs_error'] > p95_error, 'outlier_category'] = 'moderate_outlier'
+outlier_df.loc[outlier_df['abs_error'] > p99_error, 'outlier_category'] = 'extreme_outlier'
+
+# --- VISUALIZATIONS ---
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# 1. Residuals distribution
+axes[0].hist(val_residuals, bins=50, alpha=0.7, color='steelblue', edgecolor='black')
+axes[0].axvline(x=0, color='red', linestyle='--', linewidth=2)
+axes[0].set_xlabel('Residuals (Actual - Predicted)')
+axes[0].set_ylabel('Frequency')
+axes[0].set_title('Distribution of Prediction Residuals')
+axes[0].grid(alpha=0.3)
+
+# 2. Actual vs Predicted with outliers highlighted
+extreme_outliers = outlier_df[outlier_df['outlier_category'] == 'extreme_outlier']
+axes[1].scatter(outlier_df['actual'], outlier_df['predicted'], alpha=0.3, s=20, label='Normal', color='steelblue')
+axes[1].scatter(extreme_outliers['actual'], extreme_outliers['predicted'], 
+                alpha=0.8, s=50, label='Extreme Outliers (Top 1%)', color='red', edgecolor='black')
+axes[1].plot([y_val.min(), y_val.max()], [y_val.min(), y_val.max()], 
+               'k--', linewidth=2, label='Perfect Prediction')
+axes[1].set_xlabel('Actual Target')
+axes[1].set_ylabel('Predicted Target')
+axes[1].set_title('Actual vs Predicted (Validation Set)')
+axes[1].legend()
+axes[1].grid(alpha=0.3)
+
+plt.tight_layout()
+plt.savefig(figures_dir / 'outlier_analysis.png', dpi=150)
+plt.show()
+
+print(f"✓ Outlier analysis complete. Plot saved to figures/outlier_analysis.png")
+
+# =============================================================================
+# 11. SAVE MODEL
 # =============================================================================
 print("\n" + "=" * 60)
 print("RETRAINING ON FULL DATASET")
