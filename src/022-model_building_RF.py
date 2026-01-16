@@ -329,10 +329,6 @@ import joblib
 joblib.dump(pipeline, models_dir / 'rf_model.joblib')
 print(f"✓ Model saved to models/rf_model.joblib")
 
-# Save feature importance DataFrame
-importance_df.to_csv(models_dir / 'rf_feature_importance.csv', index=False)
-print(f"✓ Feature importance saved to models/rf_feature_importance.csv")
-
 print("\n" + "=" * 60)
 print("PIPELINE COMPLETE")
 print("=" * 60)
