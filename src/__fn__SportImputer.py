@@ -1,17 +1,16 @@
 from sklearn.base import BaseEstimator, TransformerMixin
+import pandas as pd
+import numpy as np
 
 # Custom transformer for sport columns imputation
 class SportImputer(BaseEstimator, TransformerMixin):
     """
     Impute sport columns with 'not_applicable' for all missing values.
     
-    Since sports_df is exhaustive, anyone not in sports_df will have NaN for all 
-    sport-related columns after the left merge. This includes:
-    - Original sport columns (Sports, etc.)
-    - Categorical columns from sports_desc merge (Categorie, Nom fédération, Nom catégorie, Code)
-    
-    All of these will be filled with 'not_applicable' to indicate the person doesn't 
-    practice any sport or the information is not available.
+    Improvements:
+    - Forces 'Categorie' and 'Sports' to string type to prevent pipeline errors.
+    - Imputes 'not_applicable' for missing values in categorical columns.
+    - Imputes 0 for strictly numeric columns (if any).
     """
     
     def __init__(self, sport_cols=None):
@@ -30,16 +29,22 @@ class SportImputer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X_copy = X.copy()
         
-        # Fill sport columns based on their data type
-        # Categorical columns: fill with 'not_applicable'
-        # Numeric columns: fill with 0 (if any exist)
         for col in self.sport_cols_:
-            if col in X_copy.columns:
-                if X_copy[col].dtype == 'object' or X_copy[col].dtype.name == 'category':
-                    # Categorical: fill with 'not_applicable'
+            if col not in X_copy.columns:
+                continue
+
+            # 'Categorie' and 'Sports' are categorical codes. We must cast them to string so 'NaN' becomes 'nan'. This matches the AAV2020Encoder logic and prevents OrdinalEncoder from crashing on mixed types.
+            if col in ['Categorie', 'Sports']:
+                X_copy[col] = X_copy[col].astype(str)
+                # Replace the string 'nan' (from casting np.nan) with 'not_applicable'
+                X_copy[col] = X_copy[col].replace('nan', 'not_applicable')
+            
+            # --- Standard Handling for other columns ---
+            else:
+                if X_copy[col].dtype == 'object' or isinstance(X_copy[col].dtype, pd.CategoricalDtype):
                     X_copy[col] = X_copy[col].fillna('not_applicable')
                 else:
-                    # Numeric: fill with 0
+                    # Numeric fallback (e.g. if there were count columns)
                     X_copy[col] = X_copy[col].fillna(0)
         
         return X_copy
