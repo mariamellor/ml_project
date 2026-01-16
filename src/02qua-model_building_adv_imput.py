@@ -326,6 +326,8 @@ print(f"✓ Feature importance plot saved to figures/feature_importance.png")
 # =============================================================================
 # 8. LEARNING CURVE
 # =============================================================================
+best_model = pipeline
+
 print("\n" + "=" * 60)
 print("LEARNING CURVE")
 print("=" * 60)
