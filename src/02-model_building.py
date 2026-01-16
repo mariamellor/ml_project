@@ -260,7 +260,62 @@ val_r2_tuned = best_model.score(X_val, y_val)
 print(f"✓ Tuned Model Validation R²: {val_r2_tuned:.4f}")
 
 # =============================================================================
-# 7. FEATURE IMPORTANCE ANALYSIS
+# 7 FINAL CROSS-VALIDATION & CONFIDENCE INTERVAL
+# =============================================================================
+print("\n" + "=" * 60)
+print("FINAL CROSS-VALIDATION (CONFIDENCE INTERVAL)")
+print("=" * 60)
+
+from sklearn.model_selection import cross_val_score
+
+# 1. Use the best estimator found in the tuning step
+final_cv_model = halving_search.best_estimator_
+
+# 2. Define a robust CV strategy (e.g., 10-fold for better distribution)
+# We use the FULL dataset (X, y) here, not just X_train
+cv_strategy_final = KFold(n_splits=10, shuffle=True, random_state=42)
+
+print(f"Running {cv_strategy_final.get_n_splits()}-Fold CV on the full dataset...")
+
+# 3. Calculate scores
+scores = cross_val_score(
+    final_cv_model, 
+    X, 
+    y, 
+    cv=cv_strategy_final, 
+    scoring='r2', 
+    n_jobs=-1
+)
+
+# 4. Calculate Statistics
+mean_score = scores.mean()
+std_dev = scores.std()
+# 95% Confidence Interval ≈ Mean ± 2 * StdDev
+ci_lower = mean_score - (2 * std_dev)
+ci_upper = mean_score + (2 * std_dev)
+
+print("\n" + "-" * 40)
+print(f"Cross-Validation Results (R²):")
+print("-" * 40)
+print(f"Individual Folds: {np.round(scores, 4)}")
+print(f"Mean R²:          {mean_score:.4f}")
+print(f"Standard Dev:     {std_dev:.4f}")
+print(f"95% Conf. Int.:   [{ci_lower:.4f}, {ci_upper:.4f}]")
+print("-" * 40)
+
+# Optional: Visualize the distribution of scores
+plt.figure(figsize=(8, 4))
+plt.boxplot(scores, vert=False)
+plt.title(f'Cross-Validation R² Distribution (Mean: {mean_score:.3f})')
+plt.xlabel('R² Score')
+plt.yticks([])
+plt.tight_layout()
+plt.savefig(figures_dir / 'cv_score_distribution.png', dpi=150)
+plt.close()
+print(f"✓ CV score distribution plot saved to figures/cv_score_distribution.png")
+
+# =============================================================================
+# 8. FEATURE IMPORTANCE ANALYSIS
 # =============================================================================
 print("\n" + "=" * 60)
 print("FEATURE IMPORTANCE ANALYSIS")
@@ -299,7 +354,7 @@ plt.close()
 print(f"✓ Feature importance plot saved to figures/feature_importance.png")
 
 # =============================================================================
-# 8. LEARNING CURVE
+# 9. LEARNING CURVE
 # =============================================================================
 print("\n" + "=" * 60)
 print("LEARNING CURVE")
@@ -331,13 +386,20 @@ plot_learning_curve(halving_search.best_estimator_, X, y)
 print(f"✓ Learning curve saved to figures/learning_curve.png")
 
 # =============================================================================
-# 9. SAVE MODEL
+# 10. SAVE MODEL
 # =============================================================================
 print("\n" + "=" * 60)
-print("SAVING MODEL")
+print("RETRAINING ON FULL DATASET")
 print("=" * 60)
 
-import joblib
+# 1. Retrieve the best pipeline structure/params
+final_pipeline = halving_search.best_estimator_
 
-joblib.dump(best_model, models_dir / 'best_model.joblib')
-print(f"✓ Model saved to models/best_model.joblib")
+# 2. Fit on the FULL X and y (combining train + val)
+print(f"Retraining on full dataset ({len(X)} samples)...")
+final_pipeline.fit(X, y) 
+
+# 3. Save THIS model
+import joblib
+joblib.dump(final_pipeline, models_dir / 'best_model.joblib')
+print(f"✓ Model trained on full dataset saved to models/best_model.joblib")
