@@ -227,12 +227,12 @@ print("=" * 60)
 cv_strategy = KFold(n_splits=5, shuffle=True, random_state=42)
 
 param_dist = {
-    'regressor__max_iter': [100, 200, 300],
+    'regressor__max_iter': [200, 300, 400],
     'regressor__learning_rate': [0.01, 0.05, 0.1, 0.2],
-    'regressor__max_leaf_nodes': [15, 31, 63, 127],
-    'regressor__max_depth': [None, 5, 10, 20],
-    'regressor__min_samples_leaf': [10, 20, 50, 100],
-    'regressor__l2_regularization': [0.0, 0.1, 1.0, 10.0]
+    'regressor__max_leaf_nodes': [10, 15, 31, 63, 127],
+    'regressor__max_depth': [None, 10, 20],
+    'regressor__min_samples_leaf': [5, 10, 20, 50],
+    'regressor__l2_regularization': [0.0, 0.1, 1.0, 2.0, 10.0]
 }
 
 halving_search = HalvingRandomSearchCV(
