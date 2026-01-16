@@ -450,7 +450,7 @@ axes[1].grid(alpha=0.3)
 
 plt.tight_layout()
 plt.savefig(figures_dir / 'outlier_analysis.png', dpi=150)
-plt.show()
+plt.close()
 
 print(f"✓ Outlier analysis complete. Plot saved to figures/outlier_analysis.png")
 
